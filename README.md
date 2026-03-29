@@ -1,13 +1,3 @@
----
-title: AI Skill Demand Tracker Dashboard
-emoji: 🚀
-colorFrom: blue
-colorTo: purple
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # AI Skill Demand Tracker — Phase 1: Data Pipeline
 
 > Fetch job posts from 3 live sources → LLM extracts skills → stored in SQLite time-series DB.
