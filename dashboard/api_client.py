@@ -29,7 +29,7 @@ def _get(endpoint: str, params: dict = None) -> dict | list | None:
     Shows a Streamlit error if the API is unreachable.
     """
     try:
-        resp = requests.get(f"{API_BASE}{endpoint}", params=params, timeout=60)
+        resp = requests.get(f"{API_BASE}{endpoint}", params=params, timeout=300)
         resp.raise_for_status()
         return resp.json()
     except requests.ConnectionError:
