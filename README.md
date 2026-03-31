@@ -1,148 +1,173 @@
-# AI Skill Demand Tracker — Phase 1: Data Pipeline
+# AI Skill Demand Tracker
 
-> Fetch job posts from 3 live sources → LLM extracts skills → stored in SQLite time-series DB.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+An end-to-end data pipeline and analysis platform that tracks the demand for skills in the AI and tech job market. This project automatically ingests job postings from multiple sources, uses Large Language Models (LLMs) to extract key skills, and provides a dashboard and API for trend analysis.
+
+## Features
+
+- **Automated Data Ingestion**: Fetches job postings from Hacker News, RemoteOK, and Arbeitnow concurrently.
+- **LLM-Powered Skill Extraction**: Uses ChatGPT or Claude to accurately extract skills from unstructured job descriptions.
+- **Time-Series Database**: Stores skill data in a normalized PostGreSQL database for historical trend analysis.
+- **Interactive Dashboard**: A Streamlit application to visualize skill trends, co-occurrence, and other insights.
+- **REST API**: A FastAPI backend to programmatically access the skill trend data.
+- **CLI Interface**: A command-line interface to control the ingestion process and get quick insights.
 
 ## Architecture
 
 ```
 ┌──────────────┐  ┌──────────────┐  ┌───────────────┐
-│  HN Algolia  │  │  RemoteOK    │  │   Arbeitnow   │   ← 3 free APIs, no auth
+│  HN Algolia  │  │  RemoteOK    │  │   Arbeitnow   │
 └──────┬───────┘  └──────┬───────┘  └───────┬───────┘
        │                 │                  │
        └─────────────────┴──────────────────┘
-                         │  asyncio.gather() — runs all 3 concurrently
+                         │  asyncio.gather()
                          ▼
                ┌──────────────────┐
-               │  RawJobPost[]    │   Pydantic-validated, HTML-stripped
+               │  RawJobPost[]    │
                └────────┬─────────┘
                         │
                         ▼
                ┌──────────────────────────────────┐
                │  SkillExtractor (LLM)             │
-               │  gpt-4o-mini / claude-haiku       │
-               │  Batches of 5 → structured output │
+               │  (gpt-4o-mini / claude-haiku)     │
                └────────┬─────────────────────────┘
-                        │  ExtractedSkills (Pydantic)
+                        │  ExtractedSkills
                         ▼
                ┌──────────────────┐
                │  SQLite DB       │
-               │  jobs            │
-               │  skills          │   ← normalised, deduplicated
-               │  job_skills      │   ← join table for trend queries
                └──────────────────┘
 ```
 
----
+## Technology Stack
 
-## Setup
+- **Backend**: Python, FastAPI, Uvicorn
+- **Database**: PostgreSQL
+- **Data Processing**: Pandas
+- **LLM Integration**: LangChain
+- **Dashboard**: Streamlit
+- **Visualization**: Plotly, NetworkX
+- **CLI**: Typer, Rich
+- **Containerization**: Docker
 
-```bash
-# 1. Create virtualenv
-python -m venv venv
-source venv/bin/activate       # Linux/Mac
-# venv\Scripts\activate        # Windows
+## Getting Started
 
-# 2. Install
-pip install -r requirements.txt
+### Prerequisites
 
-# 3. Configure
-cp .env.example .env
-# Edit .env: add OPENAI_API_KEY (and/or ANTHROPIC_API_KEY)
+- Python 3.11+
+- An API key from OpenAI or Anthropic
 
-# 4. Run
-python ingest.py
-```
+### Installation
 
----
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/AI-Skill-Demand-Tracker.git
+    cd AI-Skill-Demand-Tracker
+    ```
 
-## CLI Commands
+2.  **Create a virtual environment and install dependencies:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    pip install -r requirements.txt
+    ```
 
-```bash
-# Fetch from all 3 sources
-python ingest.py
+3.  **Configure your API keys:**
+    ```bash
+    cp .env.example .env
+    ```
+    Now, edit the `.env` file to add your `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`.
 
-# Single source (good for testing)
-python ingest.py --source hackernews
-python ingest.py --source remoteok
-python ingest.py --source arbeitnow
+## Usage
 
-# Limit jobs (cheap LLM testing)
-python ingest.py --max-jobs 10
+### Command-Line Interface
 
-# Multiple sources
-python ingest.py --source hackernews --source remoteok
+The CLI allows you to control the data ingestion pipeline and get quick insights from the database.
 
-# Check DB health
-python ingest.py --stats
+-   **Fetch jobs from all sources:**
+    ```bash
+    python ingest.py
+    ```
 
-# See top trending skills (last 7 days)
-python ingest.py --top-skills
+-   **Fetch from a single source:**
+    ```bash
+    python ingest.py --source hackernews
+    ```
 
-# Top skills over last 30 days
-python ingest.py --top-skills --days 30
-```
+-   **Limit the number of jobs to fetch:**
+    ```bash
+    python ingest.py --max-jobs 10
+    ```
 
----
+-   **Check database statistics:**
+    ```bash
+    python ingest.py --stats
+    ```
+
+-   **View top trending skills:**
+    ```bash
+    python ingest.py --top-skills --days 30
+    ```
+
+### API
+
+The project includes a FastAPI server to expose the data through a REST API.
+
+-   **Run the API server:**
+    ```bash
+    uvicorn src.api.main:app --reload
+    ```
+    The API will be available at `http://127.0.0.1:8000`.
+
+-   **API Endpoints:**
+    -   `GET /api/health`: Health check endpoint.
+    -   `POST /api/ingest`: Trigger the data ingestion pipeline.
+    -   `GET /api/skills`: Get a list of all skills.
+    -   `GET /api/skills/{skill_id}`: Get details for a specific skill.
+    -   `GET /api/trends/top`: Get the top trending skills.
+    -   `GET /api/digest`: Get a summary digest of skill trends.
+
+### Dashboard
+
+The interactive dashboard provides a user-friendly way to explore the skill trend data.
+
+-   **Run the Streamlit dashboard:**
+    ```bash
+    streamlit run dashboard/Home.py
+    ```
+    The dashboard will be available at `http://localhost:8501`.
 
 ## Project Structure
 
 ```
-skill-tracker/
+AI-Skill-Demand-Tracker/
+├── .dockerignore
 ├── .env.example
+├── .gitattributes
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── analyze.py
+├── dashboard/
+├── ingest.py
 ├── requirements.txt
-├── ingest.py              ← CLI entry point
-│
+├── seed_test_data.py
 └── src/
-    ├── config.py          ← settings + get_llm() factory
-    ├── models.py          ← all Pydantic models (RawJobPost, ExtractedSkills...)
-    ├── database.py        ← SQLite schema + read/write operations
-    ├── extractor.py       ← LLM skill extraction with structured output
-    ├── pipeline.py        ← orchestrates everything
-    └── fetchers/
-        ├── base.py        ← abstract BaseFetcher
-        ├── hn.py          ← Hacker News Algolia API
-        ├── remoteok.py    ← RemoteOK public API
-        └── arbeitnow.py   ← Arbeitnow public API
+    ├── analytics/
+    ├── api/
+    ├── config.py
+    ├── database.py
+    ├── extractor.py
+    ├── fetchers/
+    ├── models.py
+    ├── pipeline.py
+    └── scheduler.py
 ```
 
----
+## Contributing
 
-## Key Learning Points
+Contributions are welcome! Please feel free to submit a pull request or open an issue.
 
-| File | Concept |
-|---|---|
-| `pipeline.py` | `asyncio.gather()` — concurrent fetching |
-| `extractor.py` | `with_structured_output()` — LLM → Pydantic |
-| `database.py` | 3NF schema design for time-series queries |
-| `models.py` | Pydantic validators + enums |
-| `fetchers/base.py` | Abstract base class pattern |
+## License
 
----
-
-## Phase 2 Preview: Analytics Engine
-
-Once you have data, Phase 2 adds:
-- Week-over-week trend detection (rising / falling / stable per skill)
-- Skill co-occurrence graph (which skills always appear together)
-- Saturation score (high demand but too many candidates)
-- Segmentation: by seniority, role type, remote vs onsite
-
-```bash
-# Phase 2 CLI (coming soon)
-python analyse.py --trending          # top rising skills this week
-python analyse.py --skill "LangChain" # full trend history for one skill
-python analyse.py --co-occurrence     # skill pairing graph
-```
-
----
-
-## Estimated LLM Cost
-
-With `gpt-4o-mini` and default settings (50 jobs per source, batch size 5):
-- ~150 jobs × ~500 tokens each = ~75k tokens input per run
-- ~150 jobs × ~200 tokens output = ~30k tokens output
-- Total: ~$0.03–0.05 per daily run
-
-With `claude-haiku`: slightly cheaper, similar quality for extraction tasks.
+This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/licenses/MIT) file for details.

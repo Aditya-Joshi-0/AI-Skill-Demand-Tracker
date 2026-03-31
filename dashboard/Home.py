@@ -53,7 +53,7 @@ with st.sidebar:
 
 # ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("# 📡 AI Skill Demand Tracker")
-st.caption("Live skill frequency data from Hacker News · RemoteOK · Arbeitnow")
+st.caption("An end-to-end data pipeline and analysis platform that tracks the demand for skills in the AI and tech job market.")
 st.divider()
 
 # ── Health metrics ────────────────────────────────────────────────────────────
